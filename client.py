@@ -43,7 +43,7 @@ while 1:
     serverPort = int(message[10:],16)
 
     clientSocket = socket(AF_INET, SOCK_STREAM)
-    print(f"{bcolors.OKGREEN}Received offer from "+clientAddress[0]+", attempting to connect..."f"{bcolors.ENDC}")
+    print(f"{bcolors.OKGREEN}Received offer from "+clientAddress[0]+", attempting to connect..."+f"{bcolors.ENDC}")
     try:
         clientSocket.connect((clientAddress[0], int(serverPort)))
         #clientSocket.connect((clientAddress[0],1111))
