@@ -17,6 +17,7 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+#Thread that send the broadcast message in the udp chanel every second.
 def printit():
     # udp
     clientSocket = socket(AF_INET, SOCK_DGRAM)
@@ -25,7 +26,7 @@ def printit():
     threading.Timer(1.0, printit).start()
     serverPort = 13118
     clientSocket.sendto(message, ('<broadcast>', serverPort))
-
+#Thread that handle the messages from the client (thread per client)
 def gameClientHandler(participantName):
     while gameFlag:
         try:
@@ -35,6 +36,7 @@ def gameClientHandler(participantName):
             scores[participantName] += 1
         except:
             break
+#Thread that get the nick name from the client (thread per client)
 def threaded(connectionSocket):
     try:
         name = connectionSocket.recv(1024)
@@ -43,41 +45,40 @@ def threaded(connectionSocket):
         participants[name.decode('utf-8')] = connectionSocket
     except Exception as e:
         print(f"{bcolors.FAIL}"+str(e)+f"{bcolors.ENDC}")
-
+#start to send udp broadcast messages
 printit()
 serverPortTcp = 2133
 print(f"{bcolors.OKBLUE}Server started, listening on IP address "+serverName+f"{bcolors.ENDC}")
 serverSocketTcp=None
+#Server main Loop
 while 1:
+    #reset the dictionaries
     participants = {}
     scores = {}
     gameFlag = True
+    #Open socket to recieve connections for 10 seconds
     serverSocketTcp = socket(AF_INET, SOCK_STREAM)  # tcp
     serverSocketTcp.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     serverSocketTcp.settimeout(10)  # timeout for listening
     serverSocketTcp.bind(('', serverPortTcp))
     serverSocketTcp.listen(1)
-
+    #Loop that accepting the tcp connects
     while 1:
         try:
             connectionSocket, addr = serverSocketTcp.accept()
             start_new_thread(threaded, (connectionSocket,))
         except:
             break
-    # print('timeout')
+    #10 seconds have passed now we divide the participants into to random groups
     group1 = []
     group2 = []
-    i = 0
-
     participantsKeyList=list(participants.keys())
     random.shuffle(participantsKeyList)
-
     for participantName in participants:
         if participantsKeyList.index(participantName)<(len(participantsKeyList)/2):
             group1.append(participantName)
         else:
             group2.append(participantName)
-        i += 1
 
     startGameMsg = "Welcome to Keyboard Spamming Battle Royale.\n"
     startGameMsg += "Group 1:\n==\n"
@@ -88,21 +89,21 @@ while 1:
         startGameMsg += participantName
 
     startGameMsg += 'Start pressing keys on your keyboard as fast as you can!!'
-
+    #Sending welcome message to all the participands
     for participantConnetSocket in participants.values():
         try:
             participantConnetSocket.send(
                 startGameMsg.encode('utf-8'))
         except Exception as e:
             print(f"{bcolors.FAIL}"+str(e)+f"{bcolors.ENDC}")
-
+    #stating thread to handle each of the participands
     for participantName in participants:
         scores[participantName] = 0
         start_new_thread(gameClientHandler, (participantName,))
-
+    #waiting until the game ends
     time.sleep(10)
     gameFlag = False
-
+    #calculating each group score
     group1Score = 0
     group2Score = 0
     for participantName in participants:
@@ -124,7 +125,7 @@ while 1:
             gameOverMsg += participantName
     else:
         gameOverMsg += "Its a tie!\n\n"+"There are no winners in this game!\n"
-
+    #sending game over message to all the participants
     #print(gameOverMsg)
     for participantName in participants:
         try:
@@ -135,5 +136,6 @@ while 1:
             print(f"{bcolors.FAIL}"+str(e)+f"{bcolors.ENDC}")
     serverSocketTcp.shutdown(SHUT_RDWR)
     serverSocketTcp.close()
+    #Going back to offer request to clients
     print(f"{bcolors.WARNING}Game over, sending out offer requests...{bcolors.ENDC}")
 
