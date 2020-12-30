@@ -23,7 +23,7 @@ def printit():
     clientSocket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
     message = bytes.fromhex("feedbeef")+bytes.fromhex("02")+bytes.fromhex("0855")
     threading.Timer(1.0, printit).start()
-    serverPort = 13120
+    serverPort = 13118
     clientSocket.sendto(message, ('<broadcast>', serverPort))
 
 def gameClientHandler(participantName):
@@ -137,5 +137,3 @@ while 1:
     serverSocketTcp.close()
     print(f"{bcolors.WARNING}Game over, sending out offer requests...{bcolors.ENDC}")
 
-
-# connectionSocket.close()
