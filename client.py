@@ -28,7 +28,7 @@ clientName = "GoBackN\n"
 print(f"{bcolors.OKBLUE}Client started, listening for offer requests... {bcolors.ENDC}")
 
 while 1:
-    serverPort = 13119
+    serverPort = 13120
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     serverSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     serverSocket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)

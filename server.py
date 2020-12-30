@@ -23,7 +23,7 @@ def printit():
     clientSocket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
     message = bytes.fromhex("feedbeef")+bytes.fromhex("02")+bytes.fromhex("0855")
     threading.Timer(1.0, printit).start()
-    serverPort = 13119
+    serverPort = 13120
     clientSocket.sendto(message, ('<broadcast>', serverPort))
 
 def gameClientHandler(participantName):
