@@ -3,21 +3,27 @@ from socket import *
 import threading
 import time
 from _thread import *
+import random
 
+hostname = gethostname()
+serverName = gethostbyname(hostname) 
 
 def printit():
     # udp
-    serverName = '192.168.175.166'
-    serverPort = 13117
+
     clientSocket = socket(AF_INET, SOCK_DGRAM)
-    message = "0xfeedbeef"+"0x2"+"12000"
+    clientSocket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+    message = bytes.fromhex("feedbeef")+bytes.fromhex("02")+bytes.fromhex("2EE0")
     threading.Timer(1.0, printit).start()
-    clientSocket.sendto(message.encode("utf-8"), (serverName, serverPort))
+    serverPort = 13119
+    clientSocket.sendto(message, ('<broadcast>', serverPort))
 
 def gameClientHandler(participantName):
     while gameFlag:
         try:
-            participants[participantName].recv(1024)
+            char=participants[participantName].recv(1024)
+            if char.decode('utf-8')=='':
+                break
             scores[participantName] += 1
         except:
             break
@@ -26,36 +32,19 @@ def threaded(connectionSocket):
     if name.decode('utf-8') in participants:
         print("change your name")
     participants[name.decode('utf-8')] = connectionSocket
-    # print(participants)
 
-    # while True:
-    # data received from client
-    # data = c.recv(1024)
-    # if not data:
-    #   print('Bye')
-
-    # lock released on exit
-    #print_lock.release()
-
-    # reverse the given string from client
-    # data = data[::-1]
-
-    # send back reversed string to client
-    # c.send(data.upper())
-
-    # connection closed
-    # connectionSocket.close()
-    
 printit()
 serverPortTcp = 12000
-print("Server started, listening on IP address 172.1.0.4")
+print("Server started, listening on IP address "+serverName)
+serverSocketTcp=None
 while 1:
     participants = {}
     scores = {}
     gameFlag = True
     #print_lock = threading.Lock()
-
+    
     serverSocketTcp = socket(AF_INET, SOCK_STREAM)  # tcp
+    serverSocketTcp.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     serverSocketTcp.settimeout(10)  # timeout for listening
     serverSocketTcp.bind(('', serverPortTcp))
     serverSocketTcp.listen(1)
@@ -71,8 +60,12 @@ while 1:
     group1 = []
     group2 = []
     i = 0
+
+    participantsKeyList=list(participants.keys())
+    random.shuffle(participantsKeyList)
+
     for participantName in participants:
-        if i % 2 == 0:
+        if participantsKeyList.index(participantName)<(len(participantsKeyList)/2):
             group1.append(participantName)
         else:
             group2.append(participantName)
@@ -103,17 +96,7 @@ while 1:
     #    pass
     time.sleep(10)
     gameFlag = False
-    '''
-    while time.time() < timeout+timeout_start:
-        for participantName in participants:  
-            participants[participantName].setblocking(0)
-            try:
-                participants[participantName].recv(1024)
-                scores[participantName] += 1
-                print(scores[participantName])
-            except:
-                pass
-    '''
+
     group1Score = 0
     group2Score = 0
     for participantName in participants:
@@ -129,14 +112,18 @@ while 1:
         gameOverMsg += "Group 1 wins!\n\n"+"Congratulations to the winners:\n"+"==\n"
         for participantName in group1:
             gameOverMsg += participantName
-    else:
+    elif group1Score < group2Score:
         gameOverMsg += "Group 2 wins!\n\n"+"Congratulations to the winners:\n"+"==\n"
         for participantName in group2:
             gameOverMsg += participantName
+    else:
+        gameOverMsg += "Its a tie!\n\n"+"There are no winners in this game!\n"
+
     print(gameOverMsg)
     for participantName in participants:
         participants[participantName].close()
-
+    serverSocketTcp.shutdown(SHUT_RDWR)
+    serverSocketTcp.close()
     print("Game over, sending out offer requests...")
 
 
