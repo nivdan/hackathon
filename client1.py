@@ -14,7 +14,7 @@ def isData():
     return select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], [])
 old_settings = termios.tcgetattr(sys.stdin)
 
-clientName = "GoBackN1\n"
+clientName = "GoBackN\n"
 print('Client started, listening for offer requests...')
 
 while 1:
@@ -36,7 +36,7 @@ while 1:
 
     clientSocket = socket(AF_INET, SOCK_STREAM)
     print(colored('Received offer from '+clientAddress[0]+' ,attempting to connect...','green'))
-
+    #print(clientAddress[0])
     try:
         clientSocket.connect((clientAddress[0], int(serverPort)))
         #clientSocket.connect((clientAddress[0],1111))
@@ -44,8 +44,11 @@ while 1:
         print(colored(str(e),'red'))
         continue
     clientSocket.send(clientName.encode('utf-8'))
-
-    serverMsg = clientSocket.recv(1024)
+    try:
+        serverMsg = clientSocket.recv(1024)
+    except Exception as e:
+        print(str(e))
+        continue
     print(serverMsg.decode('utf-8'))
     #serverMsg = clientSocket.recv(1024)
 
@@ -72,7 +75,9 @@ while 1:
                     break
             if time.time() - startTime > timeout:
                 break
+            time.sleep(0.01)
     finally:
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-
+    gameOverMsg=clientSocket.recv(1024)
+    print(gameOverMsg.decode('utf-8'))
     print("Server disconnected, listening for offer requests...")

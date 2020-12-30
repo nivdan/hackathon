@@ -7,13 +7,21 @@ import random
 
 hostname = gethostname()
 serverName = gethostbyname(hostname) 
-
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 def printit():
     # udp
-
     clientSocket = socket(AF_INET, SOCK_DGRAM)
     clientSocket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-    message = bytes.fromhex("feedbeef")+bytes.fromhex("02")+bytes.fromhex("2EE0")
+    message = bytes.fromhex("feedbeef")+bytes.fromhex("02")+bytes.fromhex("0855")
     threading.Timer(1.0, printit).start()
     serverPort = 13119
     clientSocket.sendto(message, ('<broadcast>', serverPort))
@@ -28,21 +36,22 @@ def gameClientHandler(participantName):
         except:
             break
 def threaded(connectionSocket):
-    name = connectionSocket.recv(1024)
-    if name.decode('utf-8') in participants:
-        print("change your name")
-    participants[name.decode('utf-8')] = connectionSocket
+    try:
+        name = connectionSocket.recv(1024)
+        if name.decode('utf-8') in participants:
+            print(f"{bcolors.FAIL}change your name{bcolors.ENDC}")
+        participants[name.decode('utf-8')] = connectionSocket
+    except Exception as e:
+        print(f"{bcolors.FAIL}"+str(e)+f"{bcolors.ENDC}")
 
 printit()
-serverPortTcp = 12000
-print("Server started, listening on IP address "+serverName)
+serverPortTcp = 2133
+print(f"{bcolors.OKBLUE}Server started, listening on IP address "+serverName+f"{bcolors.ENDC}")
 serverSocketTcp=None
 while 1:
     participants = {}
     scores = {}
     gameFlag = True
-    #print_lock = threading.Lock()
-    
     serverSocketTcp = socket(AF_INET, SOCK_STREAM)  # tcp
     serverSocketTcp.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     serverSocketTcp.settimeout(10)  # timeout for listening
@@ -52,7 +61,6 @@ while 1:
     while 1:
         try:
             connectionSocket, addr = serverSocketTcp.accept()
-            #print_lock.acquire()
             start_new_thread(threaded, (connectionSocket,))
         except:
             break
@@ -82,18 +90,16 @@ while 1:
     startGameMsg += 'Start pressing keys on your keyboard as fast as you can!!'
 
     for participantConnetSocket in participants.values():
-        participantConnetSocket.send(
-            startGameMsg.encode('utf-8'))
+        try:
+            participantConnetSocket.send(
+                startGameMsg.encode('utf-8'))
+        except Exception as e:
+            print(f"{bcolors.FAIL}"+str(e)+f"{bcolors.ENDC}")
 
     for participantName in participants:
         scores[participantName] = 0
         start_new_thread(gameClientHandler, (participantName,))
 
-    #timeout = 10
-    #timeout_start = time.time()
-
-    #while time.time() < timeout+timeout_start:
-    #    pass
     time.sleep(10)
     gameFlag = False
 
@@ -119,12 +125,17 @@ while 1:
     else:
         gameOverMsg += "Its a tie!\n\n"+"There are no winners in this game!\n"
 
-    print(gameOverMsg)
+    #print(gameOverMsg)
     for participantName in participants:
-        participants[participantName].close()
+        try:
+            participants[participantName].send(gameOverMsg.encode('utf-8'))
+            participants[participantName].shutdown(SHUT_RDWR)
+            participants[participantName].close()
+        except Exception as e :
+            print(f"{bcolors.FAIL}"+str(e)+f"{bcolors.ENDC}")
     serverSocketTcp.shutdown(SHUT_RDWR)
     serverSocketTcp.close()
-    print("Game over, sending out offer requests...")
+    print(f"{bcolors.WARNING}Game over, sending out offer requests...{bcolors.ENDC}")
 
 
 # connectionSocket.close()
