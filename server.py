@@ -18,7 +18,7 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
-
+#new comment
 offerCode ="02"
 serverPortTcp = 2133
 serverPortTcpHex = "0855"
